@@ -16,3 +16,11 @@ Because this tool is compiled down to a single static binary, you can install it
 ```bash
 go install [github.com/sergioferg/github-user-activity@latest](https://github.com/sergioferg/github-user-activity@latest)
 ```
+
+## Usage
+
+Input github-activity into your terminal followed by a valid github username.
+
+```
+github-activity <github-username>
+```
