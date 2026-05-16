@@ -1,12 +1,13 @@
 package github
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 )
 
-func FetchRecentActivity(client *http.Client, username string) ([]byte, error) {
+func FetchRecentActivity(client *http.Client, username string) ([]Event, error) {
 	url := fmt.Sprintf("https://api.github.com/users/%s/events", username)
 
 	recentActivityRequest, err := http.NewRequest("GET", url, nil)
@@ -33,5 +34,85 @@ func FetchRecentActivity(client *http.Client, username string) ([]byte, error) {
 		return nil, err
 	}
 
-	return data, nil
+	var events []Event
+
+	err = json.Unmarshal(data, events)
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
+
+func SummarizeActivity(events []Event) map[ActivitySummary]int {
+	eventMap := make(map[ActivitySummary]int)
+	for _, val := range events {
+		eventMap[ActivitySummary{
+			EventType: val.Type,
+			RepoName:  val.Repo.Name,
+		}]++
+	}
+
+	return eventMap
+}
+
+func FormatActivities(eventMap map[ActivitySummary]int) []string {
+	var activities []string
+	for summaryKey, count := range eventMap {
+		switch summaryKey.EventType {
+		case "PushEvent":
+			if count > 1 {
+				activities = append(activities, fmt.Sprintf("Pushed %d commits to %s", count, summaryKey.RepoName))
+			} else {
+				activities = append(activities, fmt.Sprintf("Pushed %d commit to %s", count, summaryKey.RepoName))
+			}
+		case "IssueCommentEvent":
+			if count > 1 {
+				activities = append(activities, fmt.Sprintf("Left %d comments on issues in %s", count, summaryKey.RepoName))
+			} else {
+				activities = append(activities, fmt.Sprintf("Left %d comment on issues in %s", count, summaryKey.RepoName))
+			}
+		case "CreateEvent":
+			if count > 1 {
+				activities = append(activities, fmt.Sprintf("Created %d branches or tags in %s", count, summaryKey.RepoName))
+			} else {
+				activities = append(activities, fmt.Sprintf("Created %d branch or tag in %s", count, summaryKey.RepoName))
+			}
+		case "DeleteEvent":
+			if count > 1 {
+				activities = append(activities, fmt.Sprintf("Deleted %d branches or tags in %s", count, summaryKey.RepoName))
+			} else {
+				activities = append(activities, fmt.Sprintf("Deleted %d branche or tag in %s", count, summaryKey.RepoName))
+			}
+		case "PullRequestReviewEvent":
+			if count > 1 {
+				activities = append(activities, fmt.Sprintf("Submitted %d pull requests reviews in %s", count, summaryKey.RepoName))
+			} else {
+				activities = append(activities, fmt.Sprintf("Submitted %d pull request review in %s", count, summaryKey.RepoName))
+			}
+		case "IssuesEvent":
+			if count > 1 {
+				activities = append(activities, fmt.Sprintf("Opened/closed %d issues in %s", count, summaryKey.RepoName))
+			} else {
+				activities = append(activities, fmt.Sprintf("Opened/closed %d issue in %s", count, summaryKey.RepoName))
+			}
+		case "PullRequestEvent":
+			if count > 1 {
+				activities = append(activities, fmt.Sprintf("Submitted %d pull requests in %s", count, summaryKey.RepoName))
+			} else {
+				activities = append(activities, fmt.Sprintf("Submitted %d pull request in %s", count, summaryKey.RepoName))
+			}
+
+		case "WatchEvent":
+			activities = append(activities, fmt.Sprintf("Starred %s", summaryKey.RepoName))
+
+		case "ForkEvent":
+			activities = append(activities, fmt.Sprintf("Forked %s", summaryKey.RepoName))
+
+		default:
+			activities = append(activities, fmt.Sprintf("%s (%d events) on %s", summaryKey.EventType, count, summaryKey.RepoName))
+		}
+	}
+
+	return activities
 }

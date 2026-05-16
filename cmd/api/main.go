@@ -10,8 +10,17 @@ import (
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "Error: Please provide a username.")
+		fmt.Fprintf(os.Stderr, "Usage: %s <username>\n", os.Args[0])
+		os.Exit(1)
+	}
+	if len(os.Args) > 2 {
+		fmt.Fprintln(os.Stderr, "Error: Too many arguments")
+		fmt.Fprintf(os.Stderr, "Usage: %s <username>\n", os.Args[0])
+		os.Exit(1)
+	}
 	username := os.Args[1]
-	fmt.Println(username)
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -19,10 +28,13 @@ func main() {
 
 	data, err := github.FetchRecentActivity(client, username)
 	if err != nil {
-		//TODO: handle errors
-		fmt.Println("ERROR: %e", err)
-		return
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
-	fmt.Println(string(data))
 
+	myEventMap := github.SummarizeActivity(data)
+	activities := github.FormatActivities(myEventMap)
+	for _, activity := range activities {
+		fmt.Println(activity)
+	}
 }
