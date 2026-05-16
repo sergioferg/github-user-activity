@@ -36,7 +36,7 @@ func FetchRecentActivity(client *http.Client, username string) ([]Event, error) 
 
 	var events []Event
 
-	err = json.Unmarshal(data, events)
+	err = json.Unmarshal(data, &events)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func FormatActivities(eventMap map[ActivitySummary]int) []string {
 			if count > 1 {
 				activities = append(activities, fmt.Sprintf("Deleted %d branches or tags in %s", count, summaryKey.RepoName))
 			} else {
-				activities = append(activities, fmt.Sprintf("Deleted %d branche or tag in %s", count, summaryKey.RepoName))
+				activities = append(activities, fmt.Sprintf("Deleted %d branch or tag in %s", count, summaryKey.RepoName))
 			}
 		case "PullRequestReviewEvent":
 			if count > 1 {
